@@ -191,6 +191,28 @@
               <div class="label">Código 2FA (opcional)</div>
               <input id="in-code" placeholder="123456" />
             </div>
+            <div style="margin-top:8px"></div>
+            <div>
+              <div class="label">Cookies de instagram.com (pegar)</div>
+              <textarea id="in-cookie-string" rows="3" placeholder="sessionid=...; csrftoken=...; ds_user_id=..." style="width:100%"></textarea>
+            </div>
+            <div class="stack">
+              <div class="form-row">
+                <div>
+                  <div class="label">sessionid</div>
+                  <input id="in-sessionid" placeholder="sessionid" />
+                </div>
+                <div>
+                  <div class="label">csrftoken</div>
+                  <input id="in-csrftoken" placeholder="csrftoken" />
+                </div>
+                <div>
+                  <div class="label">ds_user_id</div>
+                  <input id="in-dsuserid" placeholder="ds_user_id" />
+                </div>
+              </div>
+              <div class="mono" style="opacity:0.8">Sugerencia: abre Instagram, inicia sesión y copia las cookies desde DevTools → Application → Cookies → instagram.com</div>
+            </div>
           </div>
           <div class="actions">
             <button id="btn-do-login">Entrar</button>
