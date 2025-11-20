@@ -201,6 +201,14 @@ class SendMessageBody(BaseModel):
     recipient: str
     text: str
 
+class ImportSessionBody(BaseModel):
+    username: str
+    sessionid: str
+    csrftoken: Optional[str] = None
+    ds_user_id: Optional[str] = None
+    cookies: Optional[dict] = None
+    webhook_url: Optional[HttpUrl] = None
+
 class AppLoginBody(BaseModel):
     username: str
     password: str
@@ -372,6 +380,24 @@ async def login(body: LoginBody, app_auth: str | None = Header(None, alias="X-Ap
                 await _sb_update_account(user_id, body.username, {"ig_sessionid": sid})
         except Exception:
             pass
+        if body.webhook_url:
+            await _sb_update_account(user_id, body.username, {"webhook_url": str(body.webhook_url)})
+            manager.add_webhook(body.username, str(body.webhook_url))
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/accounts/import-session")
+async def import_session(body: ImportSessionBody, app_auth: str | None = Header(None, alias="X-App-Session")):
+    user_id = _require_app_session(app_auth)
+    if not body.username or not body.sessionid:
+        raise HTTPException(status_code=400, detail="missing_fields")
+    try:
+        manager.import_session(body.username, body.sessionid, body.cookies or None, str(body.webhook_url) if body.webhook_url else None)
+        acc = await _sb_get_account(user_id, body.username)
+        if not acc:
+            await _sb_insert_account(user_id, body.username)
+        await _sb_update_account(user_id, body.username, {"ig_sessionid": body.sessionid})
         if body.webhook_url:
             await _sb_update_account(user_id, body.username, {"webhook_url": str(body.webhook_url)})
             manager.add_webhook(body.username, str(body.webhook_url))
