@@ -56,7 +56,7 @@ class AccountManager:
             return True
         c = Client()
         try:
-            setattr(c, "sessionid", sessionid)
+            c.login_by_sessionid(sessionid)
             self.clients[key] = c
             return True
         except Exception:
