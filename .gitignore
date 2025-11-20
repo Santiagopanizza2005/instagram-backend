@@ -1,8 +1,0 @@
-.nvd
-data/
-sessions/
-*.db
-__pycache__/
-.env
-.DS_Store
-.vscode/
