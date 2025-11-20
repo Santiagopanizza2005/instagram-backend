@@ -62,6 +62,24 @@ class AccountManager:
         except Exception:
             return False
 
+    def import_session(self, username: str, sessionid: str, cookies: Optional[dict] = None, webhook_url: Optional[str] = None):
+        c = Client()
+        setattr(c, "sessionid", sessionid)
+        try:
+            try:
+                c.account_info()
+            except Exception:
+                c.user_id_from_username(username)
+        except Exception:
+            raise ValueError("invalid_session")
+        key = self._k(username)
+        self.clients[key] = c
+        if key not in self._tokens:
+            self._tokens[key] = secrets.token_hex(16)
+        if webhook_url:
+            self.add_webhook(key, webhook_url)
+        return True
+
     def logout(self, username: str):
         key = self._k(username)
         if key in self.clients:
