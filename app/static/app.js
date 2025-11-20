@@ -1,16 +1,15 @@
-const API_BASE = 'https://api-para-ig-igbot.cp6q0w.easypanel.host'
-
 const api = {
-  login: async (payload) => fetch(API_BASE + '/accounts/login', {method:'POST',headers:{'Content-Type':'application/json','X-App-Session':`Bearer ${appSession}`},body:JSON.stringify(payload)}).then(r=>r.json()),
-  logout: async (username) => fetch(API_BASE + '/accounts/logout', {method:'POST',headers:{'Content-Type':'application/json','X-App-Session':`Bearer ${appSession}`},body:JSON.stringify({username})}).then(r=>r.json()),
-  sessLogin: async (username, password) => fetch(API_BASE + '/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})}).then(r=>r.json()),
-  accounts: async () => fetch(API_BASE + '/accounts', {headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
-  setWebhook: async (username, url, enabled) => fetch(API_BASE + `/accounts/${encodeURIComponent(username)}/webhook`, {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`},body:JSON.stringify({webhook_url:url, enabled})}).then(r=>r.json()),
-  testWebhook: async (username, text) => fetch(API_BASE + '/test_webhook', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${tokenValue}`},body:JSON.stringify({username, text})}).then(r=>r.json()),
-  reset: async (username) => fetch(API_BASE + `/accounts/${encodeURIComponent(username)}/reset`, {method:'POST',headers:{'Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
-  getOptions: async (username) => fetch(API_BASE + `/accounts/${encodeURIComponent(username)}/options`, {headers:{'Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
-  setOptions: async (username, opts) => fetch(API_BASE + `/accounts/${encodeURIComponent(username)}/options`, {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`},body:JSON.stringify(opts)}).then(r=>r.json()),
-  resetToken: async (username) => fetch(API_BASE + `/accounts/${encodeURIComponent(username)}/token/reset`, {method:'POST',headers:{'Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
+  login: async (payload) => fetch('/accounts/login', {method:'POST',headers:{'Content-Type':'application/json','X-App-Session':`Bearer ${appSession}`},body:JSON.stringify(payload)}).then(r=>r.json()),
+  logout: async (username) => fetch('/accounts/logout', {method:'POST',headers:{'Content-Type':'application/json','X-App-Session':`Bearer ${appSession}`},body:JSON.stringify({username})}).then(r=>r.json()),
+  sessLogin: async (username, password) => fetch('/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})}).then(r=>r.json()),
+  accounts: async () => fetch('/accounts', {headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
+  setWebhook: async (username, url, enabled) => fetch(`/accounts/${encodeURIComponent(username)}/webhook`, {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`},body:JSON.stringify({webhook_url:url, enabled})}).then(r=>r.json()),
+  testWebhook: async (username, text) => fetch('/test_webhook', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${tokenValue}`},body:JSON.stringify({username, text})}).then(r=>r.json()),
+  reset: async (username) => fetch(`/accounts/${encodeURIComponent(username)}/reset`, {method:'POST',headers:{'Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
+  getOptions: async (username) => fetch(`/accounts/${encodeURIComponent(username)}/options`, {headers:{'Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
+  setOptions: async (username, opts) => fetch(`/accounts/${encodeURIComponent(username)}/options`, {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`},body:JSON.stringify(opts)}).then(r=>r.json()),
+  resetToken: async (username) => fetch(`/accounts/${encodeURIComponent(username)}/token/reset`, {method:'POST',headers:{'Authorization':`Bearer ${tokenValue}`,'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json()),
+  importSession: async (payload) => fetch('/accounts/import-session', {method:'POST',headers:{'Content-Type':'application/json','X-App-Session':`Bearer ${appSession}`},body:JSON.stringify(payload)}).then(r=>r.json()),
 }
 
 const el = (q) => document.querySelector(q)
@@ -78,14 +77,14 @@ async function loadAccounts(){
   if(uiState.logged){
     // fetch token for display
     try{
-      const t = await fetch(API_BASE + `/accounts/${encodeURIComponent(uiState.username)}/token`, {headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json())
+      const t = await fetch(`/accounts/${encodeURIComponent(uiState.username)}/token`, {headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json())
       tokenValue = t.token || ''
       el('#token-value').textContent = tokenValue
       el('#token-masked').textContent = '••••••••••••••••'
     }catch{}
     const topUser = el('#top-username'); if(topUser){ topUser.textContent = uiState.username }
     show('#dashboard')
-    const base = API_BASE
+    const base = window.location.origin
     const sendUrlInit = el('#send-url'); if(sendUrlInit){ sendUrlInit.textContent = base + '/send_message' }
     const confUrl = el('#conf-url'); if(confUrl){ confUrl.textContent = base + '/send_message' }
     // load options
@@ -170,25 +169,40 @@ async function onLogin(){
   const password = el('#in-password').value.trim()
   const verification_code = el('#in-code').value.trim() || null
   const webhook_url = null
+  const cookieStr = (el('#in-cookie-string')?.value || '').trim()
+  const parseCookies = (s) => {
+    const out = {}
+    s.split(';').forEach(p=>{ const [k,...rest] = p.trim().split('='); if(k){ out[k] = rest.join('=') } })
+    return out
+  }
+  if(cookieStr){
+    const ck = parseCookies(cookieStr)
+    const sessionid = (el('#in-sessionid')?.value?.trim()) || ck.sessionid || ''
+    const csrftoken = (el('#in-csrftoken')?.value?.trim()) || ck.csrftoken || ''
+    const ds_user_id = (el('#in-dsuserid')?.value?.trim()) || ck.ds_user_id || ''
+    if(!username || !sessionid){ alert('Completa usuario y sessionid'); return }
+    let res = null
+    try{
+      res = await api.importSession({username, sessionid, csrftoken: csrftoken||null, ds_user_id: ds_user_id||null, cookies: ck, webhook_url})
+    }catch(e){ alert('Error de red al importar sesión'); return }
+    if(res && res.ok){ el('#login-modal').classList.remove('active') } else { const msg = res?.detail || 'Sesión inválida'; alert(msg) }
+    await loadAccounts()
+    return
+  }
   if(!username||!password){ alert('Completa usuario y contraseña de Instagram'); return }
   let res = null
   try{
     res = await api.login({username,password,verification_code,webhook_url})
   }catch(e){ alert('Error de red al iniciar sesión en Instagram'); return }
-  if(res && res.ok){
-    el('#login-modal').classList.remove('active')
-  }
-  else {
-    const msg = res?.detail || 'No se pudo iniciar sesión en Instagram'
-    alert(msg)
-  }
+  if(res && res.ok){ el('#login-modal').classList.remove('active') }
+  else { const msg = res?.detail || 'No se pudo iniciar sesión en Instagram'; alert(msg) }
   await loadAccounts()
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
   // header logo detection
   const logoImg = el('#site-logo')
-  const tryPath = async (p) => fetch(API_BASE + p, {method:'HEAD'}).then(r=>r.ok).catch(()=>false)
+  const tryPath = async (p) => fetch(p, {method:'HEAD'}).then(r=>r.ok).catch(()=>false)
   const candidates = [
     '/imagenes/logo.webp',
     '/imagenes/logo.png',
@@ -209,10 +223,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   let found = null
   for(const p of candidates){ if(await tryPath(p)){ found = p; break } }
   if(found){
-    logoImg.src = API_BASE + found
+    logoImg.src = found
     logoImg.style.display = 'block'
-    const fav = el('#favicon'); if(fav){ fav.href = API_BASE + found }
-    const fav2 = el('#favicon2'); if(fav2){ fav2.href = API_BASE + found }
+    const fav = el('#favicon'); if(fav){ fav.href = found }
+    const fav2 = el('#favicon2'); if(fav2){ fav2.href = found }
   } else {
     logoImg.style.display = 'none'
   }
@@ -255,7 +269,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         tokenValue = token || ''
         el('#token-value').textContent = tokenValue
         el('#token-masked').textContent = tokenShown ? tokenValue : '••••••••••••••••'
-        const base = API_BASE
+        const base = window.location.origin
         const authHeader = el('#auth-header'); if(authHeader){ authHeader.textContent = `Authorization: Bearer ${tokenValue || '<token>'}` }
         
       }catch{}
@@ -297,9 +311,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   if(appSession){
     try{
-      const v = await fetch(API_BASE + '/api/verify-session', {headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json())
+      const v = await fetch('/api/verify-session', {headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json())
       if(v && v.ok){
-        const r = await fetch(API_BASE + '/api/refresh-session', {method:'POST', headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json())
+        const r = await fetch('/api/refresh-session', {method:'POST', headers:{'X-App-Session':`Bearer ${appSession}`}}).then(r=>r.json())
         if(r && r.ok && r.token){ appSession = r.token; localStorage.setItem('appSession', appSession) }
         el('#session-login')?.classList.remove('active')
       } else {
@@ -309,7 +323,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }catch(e){ appSession=''; localStorage.removeItem('appSession') }
   } else if(appRefresh){
     try{
-      const r = await fetch(API_BASE + '/api/refresh-from-token', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({refresh: appRefresh})}).then(r=>r.json())
+      const r = await fetch('/api/refresh-from-token', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({refresh: appRefresh})}).then(r=>r.json())
       if(r && r.ok && r.token){ appSession = r.token; localStorage.setItem('appSession', appSession); el('#session-login')?.classList.remove('active') }
     }catch{}
   }
